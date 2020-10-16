@@ -37,7 +37,7 @@
         android:id="@+id/stockSymbolTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="5dp"
         android:text="AAAA"
         android:textColor="@android:color/holo_green_dark"
