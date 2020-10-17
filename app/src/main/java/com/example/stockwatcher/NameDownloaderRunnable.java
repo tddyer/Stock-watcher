@@ -18,6 +18,8 @@ public class NameDownloaderRunnable implements Runnable{
     private MainActivity mainActivity;
     private static final String DATA_URL = "https://api.iextrading.com/1.0/ref-data/symbols";
 
+    private DatabaseHandler databaseHandler;
+
     NameDownloaderRunnable(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
     }
@@ -89,6 +91,7 @@ public class NameDownloaderRunnable implements Runnable{
 
     private ArrayList<Stock> parseJSON(String s) {
         ArrayList<Stock> stockList = new ArrayList<>();
+        databaseHandler = new DatabaseHandler(mainActivity);
 
         //TODO: should store all the stocks in SQLite DB
 
