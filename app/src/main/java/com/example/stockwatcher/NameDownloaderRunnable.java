@@ -3,6 +3,9 @@ package com.example.stockwatcher;
 import android.net.Uri;
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,14 +14,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.Buffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class NameDownloaderRunnable implements Runnable{
 
     private static final String TAG = "NameDownloaderRunnable";
     private MainActivity mainActivity;
     private static final String DATA_URL = "https://api.iextrading.com/1.0/ref-data/symbols";
-
-    private DatabaseHandler databaseHandler;
 
     NameDownloaderRunnable(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -80,22 +82,30 @@ public class NameDownloaderRunnable implements Runnable{
             return;
         }
 
-        final ArrayList<Stock> stockList = parseJSON(s);
+        final HashMap<String, String> stockNames = parseJSON(s);
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mainActivity.updateData(stockList);
+                mainActivity.saveStockNames(stockNames);
             }
         });
     }
 
-    private ArrayList<Stock> parseJSON(String s) {
-        ArrayList<Stock> stockList = new ArrayList<>();
-        databaseHandler = new DatabaseHandler(mainActivity);
-
-        //TODO: should store all the stocks in SQLite DB
-
-
-        return stockList;
+    private HashMap<String, String> parseJSON(String s) {
+        HashMap<String, String> stockList = new HashMap<>();
+        try {
+            JSONArray jObjMain = new JSONArray(s);
+            for (int i = 0; i < jObjMain.length(); i++) {
+                JSONObject jStock = (JSONObject) jObjMain.get(i);
+                String symbol = jStock.getString("symbol");
+                String company = jStock.getString("name");
+                stockList.put(symbol, company);
+            }
+            return stockList;
+        } catch (Exception e) {
+            Log.d(TAG, "parseJSON: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 }

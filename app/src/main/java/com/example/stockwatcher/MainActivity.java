@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
@@ -17,6 +18,8 @@ public class MainActivity extends AppCompatActivity
     private List<Stock> stocksList = new ArrayList<>();
     private RecyclerView recyclerView;
     private StocksAdapter stocksAdapter;
+
+    private DatabaseHandler databaseHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +48,12 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setAdapter(stocksAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        databaseHandler = new DatabaseHandler(this);
+
         // fetching stock name data
         NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
         new Thread(nameDownloaderRunnable).start();
-
-        Toast.makeText(this, "ran name downloader", Toast.LENGTH_SHORT).show();
-
-
+        
     }
 
     // overriding onClickListener methods
@@ -66,12 +68,17 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onLongClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
-        // TODO: DELETE NOTE HERE
+        // TODO: DELETE STOCK HERE
         return true;
     }
 
-    public void updateData(ArrayList<Stock> stocks) {
-        stocksList.addAll(stocks);
+    public void saveStockNames(HashMap<String, String> stocks) {
+        for (String key : stocks.keySet()) {
+            Stock temp = new Stock();
+            temp.setSymbol(key);
+            temp.setCompany(stocks.get(key));
+            databaseHandler.addStock(temp);
+        }
         stocksAdapter.notifyDataSetChanged();
     }
 
