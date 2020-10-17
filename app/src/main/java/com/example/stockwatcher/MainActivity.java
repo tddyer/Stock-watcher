@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,10 +51,33 @@ public class MainActivity extends AppCompatActivity
 
         databaseHandler = new DatabaseHandler(this);
 
-        // fetching stock name data
-        NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
-        new Thread(nameDownloaderRunnable).start();
-        
+        File dbFile = this.getDatabasePath(DatabaseHandler.DATABASE_NAME);
+        if (!(dbFile.exists())) {
+            // fetching stock name data
+            NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
+            new Thread(nameDownloaderRunnable).start();
+        }
+
+        ArrayList<Stock> list = databaseHandler.loadStocks();
+        stocksList.clear();
+        stocksList.addAll(list);
+        stocksAdapter.notifyDataSetChanged();
+
+    }
+//
+//    @Override
+//    protected void onResume() {
+////        ArrayList<Stock> list = databaseHandler.loadStocks();
+////        stocksList.clear();
+////        stocksList.addAll(list);
+////        stocksAdapter.notifyDataSetChanged();
+//        super.onResume();
+//    }
+
+    @Override
+    protected void onDestroy() {
+        databaseHandler.shutDown();
+        super.onDestroy();
     }
 
     // overriding onClickListener methods

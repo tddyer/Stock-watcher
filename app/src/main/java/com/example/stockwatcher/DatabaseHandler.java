@@ -16,7 +16,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHandler";
     private static final int DATABASE_VERSION = 1; // increment when DB Schema is changed
 
-    private static final String DATABASE_NAME = "StockAppDB";
+    public static final String DATABASE_NAME = "StockAppDB";
     private static final String TABLE_NAME = "StockWatchTable";
 
     // DB columns
@@ -26,8 +26,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     // DB creation string
     private static final String SQL_CREATE_TABLE =
             "CREATE TABLE " + TABLE_NAME + " (" +
-                    SYMBOL + " TEXT not null unique, " +
-                    COMPANY + "TEXT not null)";
+                    SYMBOL + " TEXT not null unique," +
+                    COMPANY + " TEXT not null)";
 
     private SQLiteDatabase database;
 
@@ -47,15 +47,12 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     // add stock to db
     public void addStock(Stock stock) {
-        Log.d(TAG, "addStock: Adding " + stock.getSymbol());
 
         ContentValues vals = new ContentValues();
         vals.put(SYMBOL, stock.getSymbol());
         vals.put(COMPANY, stock.getCompany());
 
         database.insert(TABLE_NAME, null, vals);
-
-        Log.d(TAG, "addStock: Add Successful");
     }
 
     // delete stock from db
@@ -68,8 +65,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     }
 
     // fetch all stocks from db
-    public ArrayList<String[]> loadStocks() {
-        ArrayList<String[]> stocks = new ArrayList<>();
+    public ArrayList<Stock> loadStocks() {
+        ArrayList<Stock> stocks = new ArrayList<>();
 
         Cursor cursor = database.query(
                 TABLE_NAME,
@@ -86,11 +83,39 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             for (int i = 0; i < cursor.getCount(); i++) {
                 String symbol = cursor.getString(0);
                 String company = cursor.getString(1);
-                stocks.add(new String[]{symbol, company});
+                Stock temp = new Stock();
+                temp.setSymbol(symbol);
+                temp.setCompany(company);
+                stocks.add(temp);
                 cursor.moveToNext();
             }
             cursor.close();
         }
+        Log.d(TAG, "loadStocks: DONE");
         return stocks;
+    }
+
+    void dumpDbToLog() {
+        Cursor cursor = database.rawQuery("select * from " + TABLE_NAME, null);
+        if (cursor != null) {
+            cursor.moveToFirst();
+
+            Log.d(TAG, "dumpDbToLog: vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+            for (int i = 0; i < cursor.getCount(); i++) {
+                String symbol = cursor.getString(0);
+                String company = cursor.getString(1);
+                Log.d(TAG, "dumpDbToLog: " +
+                        String.format("%s %-18s", SYMBOL + ":", company) +
+                        String.format("%s %-18s", COMPANY + ":", symbol));
+                cursor.moveToNext();
+            }
+            cursor.close();
+        }
+
+        Log.d(TAG, "dumpDbToLog: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+    }
+
+    void shutDown() {
+        database.close();
     }
 }

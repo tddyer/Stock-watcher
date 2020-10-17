@@ -31,7 +31,6 @@ public class NameDownloaderRunnable implements Runnable{
     public void run() {
         Uri dataUri = Uri.parse(DATA_URL);
         String usageURL = dataUri.toString();
-        Log.d(TAG, "run: " + usageURL);
 
         StringBuilder sb = new StringBuilder();
         try {
