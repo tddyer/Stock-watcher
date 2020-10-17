@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,28 +23,33 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        for (int i = 0; i < 30; i++) {
-            Stock s = new Stock();
-            s.setSymbol("AAAA");
-            s.setPrice(i * 2.22);
-            if (i % 2 == 0) {
-                s.setPriceChange(i + .34);
-                s.setChangePercentage(i + .02);
-            } else {
-                s.setPriceChange((i + .34) * -1);
-                s.setChangePercentage((i + .02) * -1);
-            }
-
-            s.setCompany("Random Company Here");
-            stocksList.add(s);
-        }
+//        for (int i = 0; i < 30; i++) {
+//            Stock s = new Stock();
+//            s.setSymbol("AAAA");
+//            s.setPrice(i * 2.22);
+//            if (i % 2 == 0) {
+//                s.setPriceChange(i + .34);
+//                s.setChangePercentage(i + .02);
+//            } else {
+//                s.setPriceChange((i + .34) * -1);
+//                s.setChangePercentage((i + .02) * -1);
+//            }
+//
+//            s.setCompany("Random Company Here");
+//            stocksList.add(s);
+//        }
 
         recyclerView = findViewById(R.id.stocksRecyclerView);
 
         stocksAdapter = new StocksAdapter(stocksList, this);
         recyclerView.setAdapter(stocksAdapter);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // fetching stock name data
+        NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
+        new Thread(nameDownloaderRunnable).start();
+
+        Toast.makeText(this, "ran name downloader", Toast.LENGTH_SHORT).show();
 
 
     }
