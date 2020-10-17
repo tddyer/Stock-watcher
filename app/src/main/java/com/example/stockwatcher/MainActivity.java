@@ -63,4 +63,14 @@ public class MainActivity extends AppCompatActivity
         // TODO: DELETE NOTE HERE
         return true;
     }
+
+    public void updateData(ArrayList<Stock> stocks) {
+        stocksList.addAll(stocks);
+        stocksAdapter.notifyDataSetChanged();
+    }
+
+    public void downloadFailed() {
+        stocksList.clear();
+        stocksAdapter.notifyDataSetChanged();
+    }
 }
