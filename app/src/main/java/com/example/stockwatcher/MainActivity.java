@@ -51,28 +51,35 @@ public class MainActivity extends AppCompatActivity
 
         databaseHandler = new DatabaseHandler(this);
 
+        // fetch DB file from file system. If it doesn't exist, run nameDownloader runnable
+        // to create it
         File dbFile = this.getDatabasePath(DatabaseHandler.DATABASE_NAME);
         if (!(dbFile.exists())) {
             // fetching stock name data
-            NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
+            NameDownloaderRunnable nameDownloaderRunnable =
+                    new NameDownloaderRunnable(this);
             new Thread(nameDownloaderRunnable).start();
         }
 
-        ArrayList<Stock> list = databaseHandler.loadStocks();
-        stocksList.clear();
-        stocksList.addAll(list);
-        stocksAdapter.notifyDataSetChanged();
+        // load stock names from internal DB
+        ArrayList<Stock> stockNames = databaseHandler.loadStocks();
+
+//        for (Stock stock : stockNames) {
+        for(int i = 0; i < 3; i++) {
+            // fetch stock data from IEX
+            StockDownloaderRunnable stockDownloaderRunnable =
+                    new StockDownloaderRunnable(this, stockNames.get(i));
+            new Thread(stockDownloaderRunnable).start();
+
+        }
+
+        // test: populates recycler with names from db
+
+//        stocksList.clear();
+//        stocksList.addAll(tempStocks);
+//        stocksAdapter.notifyDataSetChanged();
 
     }
-//
-//    @Override
-//    protected void onResume() {
-////        ArrayList<Stock> list = databaseHandler.loadStocks();
-////        stocksList.clear();
-////        stocksList.addAll(list);
-////        stocksAdapter.notifyDataSetChanged();
-//        super.onResume();
-//    }
 
     @Override
     protected void onDestroy() {
@@ -108,6 +115,15 @@ public class MainActivity extends AppCompatActivity
 
     public void downloadFailed() {
         stocksList.clear();
+        stocksAdapter.notifyDataSetChanged();
+    }
+
+    // StockDownloader methods
+
+    // add stock to stocks list, sort list, update changes
+    public void addStockFromDownloader(Stock s) {
+        stocksList.add(s);
+        stocksList.sort(new StockSorter());
         stocksAdapter.notifyDataSetChanged();
     }
 }
