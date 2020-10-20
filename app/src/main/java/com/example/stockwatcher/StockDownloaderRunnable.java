@@ -16,7 +16,7 @@ public class StockDownloaderRunnable implements Runnable{
     private static final String TAG = "StockDownloaderRunnable";
     private static String API_KEY = "pk_843875f639654198a420bf7384e1595c";
     private MainActivity mainActivity;
-    private Stock stock;
+    public Stock stock;
     private String DATA_URL;
 
     // constructor
@@ -79,40 +79,40 @@ public class StockDownloaderRunnable implements Runnable{
             mainActivity.runOnUiThread(() -> mainActivity.downloadFailed());
             return;
         }
-
-        final Stock stockObj = parseJSON(s);
-        mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stockObj));
+        parseJSON(s);
+        //final Stock stockObj = parseJSON(s);
+        //mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stockObj));
     }
 
     // parse json string and returns Stock object
-    private Stock parseJSON(String s) {
-        Stock jStock = new Stock();
+    private void parseJSON(String s) {
+        //Stock jStock = new Stock();
         try {
             JSONObject jObjMain = new JSONObject(s);
-            jStock.setSymbol(jObjMain.getString("symbol"));
-            jStock.setCompany(jObjMain.getString("companyName"));
+            stock.setSymbol(jObjMain.getString("symbol"));
+            stock.setCompany(jObjMain.getString("companyName"));
 
             // checking stock values that can be null
             String lp = jObjMain.getString("latestPrice");
             if (lp.equals("null"))
                 lp = "0";
-            jStock.setPrice(Double.parseDouble(lp));
+            stock.setPrice(Double.parseDouble(lp));
 
             String c = jObjMain.getString("change");
             if (c.equals("null"))
                 c = "0";
-            jStock.setPriceChange(Double.parseDouble(c));
+            stock.setPriceChange(Double.parseDouble(c));
 
             String cp = jObjMain.getString("changePercent");
             if (cp.equals("null"))
                 cp = "0";
-            jStock.setChangePercentage(Double.parseDouble(cp));
+            stock.setChangePercentage(Double.parseDouble(cp));
 
-            return jStock;
+            //return jStock;
         } catch (Exception e) {
             Log.d(TAG, "parseJSON: " + e.getMessage());
             e.printStackTrace();
         }
-        return null;
+        //return null;
     }
 }

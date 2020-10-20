@@ -21,6 +21,7 @@ public class NameDownloaderRunnable implements Runnable{
     private static final String TAG = "NameDownloaderRunnable";
     private MainActivity mainActivity;
     private static final String DATA_URL = "https://api.iextrading.com/1.0/ref-data/symbols";
+    public HashMap<String, String> namesMap = new HashMap<>();
 
     NameDownloaderRunnable(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -70,39 +71,30 @@ public class NameDownloaderRunnable implements Runnable{
     private void dataHandler(String s) {
         if (s == null) {
             Log.d(TAG, "dataHandler: Failure in downloading data");
-            mainActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mainActivity.downloadFailed();
-                }
-            });
+            mainActivity.runOnUiThread(() -> mainActivity.downloadFailed());
             return;
         }
 
-        final HashMap<String, String> stockNames = parseJSON(s);
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mainActivity.saveStockNames(stockNames);
-            }
-        });
+        parseJSON(s);
+//        final HashMap<String, String> stockNames = parseJSON(s);
+        mainActivity.runOnUiThread(() -> mainActivity.udpateStockNamesMap(namesMap));
     }
 
-    private HashMap<String, String> parseJSON(String s) {
-        HashMap<String, String> stockList = new HashMap<>();
+    private void parseJSON(String s) {
+//        HashMap<String, String> stockList = new HashMap<>();
         try {
             JSONArray jObjMain = new JSONArray(s);
             for (int i = 0; i < jObjMain.length(); i++) {
                 JSONObject jStock = (JSONObject) jObjMain.get(i);
                 String symbol = jStock.getString("symbol");
                 String company = jStock.getString("name");
-                stockList.put(symbol, company);
+                namesMap.put(symbol, company);
             }
-            return stockList;
+//            return stockList;
         } catch (Exception e) {
             Log.d(TAG, "parseJSON: " + e.getMessage());
             e.printStackTrace();
         }
-        return null;
+//        return null;
     }
 }

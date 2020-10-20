@@ -1,11 +1,14 @@
 package com.example.stockwatcher;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -13,36 +16,26 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity
         implements View.OnClickListener, View.OnLongClickListener{
 
+    // stocks selected to be displayed in recycler view
     private List<Stock> stocksList = new ArrayList<>();
+
+    // stock symbols + names to be used for downloading stock data
+    private HashMap<String, String> stockNames = new HashMap<>();
+
     private RecyclerView recyclerView;
     private StocksAdapter stocksAdapter;
-
     private DatabaseHandler databaseHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-//        for (int i = 0; i < 30; i++) {
-//            Stock s = new Stock();
-//            s.setSymbol("AAAA");
-//            s.setPrice(i * 2.22);
-//            if (i % 2 == 0) {
-//                s.setPriceChange(i + .34);
-//                s.setChangePercentage(i + .02);
-//            } else {
-//                s.setPriceChange((i + .34) * -1);
-//                s.setChangePercentage((i + .02) * -1);
-//            }
-//
-//            s.setCompany("Random Company Here");
-//            stocksList.add(s);
-//        }
+        setContentView(R.layout.activity_main);
 
         recyclerView = findViewById(R.id.stocksRecyclerView);
 
@@ -52,37 +45,31 @@ public class MainActivity extends AppCompatActivity
 
         databaseHandler = new DatabaseHandler(this);
 
-        // fetch DB file from file system. If it doesn't exist, run nameDownloader runnable
-        // to create it
-        File dbFile = this.getDatabasePath(DatabaseHandler.DATABASE_NAME);
-        if (!(dbFile.exists())) {
-            // fetching stock name data
-            NameDownloaderRunnable nameDownloaderRunnable =
-                    new NameDownloaderRunnable(this);
-            new Thread(nameDownloaderRunnable).start();
-        }
+        // deletes db
+//        this.deleteDatabase(DatabaseHandler.DATABASE_NAME);
+
+        // fetching stock name data
+        NameDownloaderRunnable nameDownloaderRunnable =
+                new NameDownloaderRunnable(this);
+        new Thread(nameDownloaderRunnable).start();
 
         // load stock names from internal DB
-        ArrayList<Stock> stockNames = databaseHandler.loadStocks();
+        ArrayList<Stock> selectedStocks = databaseHandler.loadStocks();
 
-//        for (Stock stock : stockNames) {
-        for(int i = 0; i < 18; i++) {
+
+        // TODO: Might need to switch this to index so i can edit the stock values from runnable
+        for (Stock stock : selectedStocks) {
             // fetch stock data from IEX
             StockDownloaderRunnable stockDownloaderRunnable =
-                    new StockDownloaderRunnable(this, stockNames.get(i));
+                    new StockDownloaderRunnable(this, stock);
             new Thread(stockDownloaderRunnable).start();
 
+            // after returning from stockDownloader, add stock (now complete with
+            // stock financial data) to stockList, sort, and notify adapter of change
+            stocksList.add(stock);
+            stocksList.sort(new StockSorter());
+            stocksAdapter.notifyDataSetChanged();
         }
-
-        stocksList.sort(new StockSorter());
-        stocksAdapter.notifyDataSetChanged();
-
-        // test: populates recycler with names from db
-
-//        stocksList.clear();
-//        stocksxList.addAll(tempStocks);
-//        stocksAdapter.notifyDataSetChanged();
-
     }
 
     @Override
@@ -107,14 +94,11 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    public void saveStockNames(HashMap<String, String> stocks) {
-        for (String key : stocks.keySet()) {
-            Stock temp = new Stock();
-            temp.setSymbol(key);
-            temp.setCompany(stocks.get(key));
-            databaseHandler.addStock(temp);
+    // saves stock symbol:name hashmap in app for later usage in downloading stock data
+    public void udpateStockNamesMap(HashMap<String, String> stocks) {
+        for (Map.Entry<String, String> entry : stocks.entrySet()) {
+            stockNames.put(entry.getKey(), entry.getValue());
         }
-        stocksAdapter.notifyDataSetChanged();
     }
 
     public void downloadFailed() {
@@ -125,9 +109,28 @@ public class MainActivity extends AppCompatActivity
     // StockDownloader methods
 
     // add stock to stocks list, sort list, update changes
-    public void addStockFromDownloader(Stock s) {
-        stocksList.add(s);
-//        stocksList.sort(new StockSorter());
-//        stocksAdapter.notifyDataSetChanged();
+//    public void addStockFromDownloader(Stock s) {
+//        stocksList.add(s);
+////        stocksList.sort(new StockSorter());
+////        stocksAdapter.notifyDataSetChanged();
+//    }
+
+    // add stock menu
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.add_stock_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.menuAddStock) {
+            for (Map.Entry<String, String> entry : stockNames.entrySet()) {
+                System.out.println(entry.getKey() + ", " + entry.getValue());
+            }
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
