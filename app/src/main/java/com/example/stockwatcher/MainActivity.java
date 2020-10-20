@@ -67,11 +67,6 @@ public class MainActivity extends AppCompatActivity
                     new StockDownloaderRunnable(this, stock);
             new Thread(stockDownloaderRunnable).start();
 
-            // after returning from stockDownloader, add stock (now complete with
-            // stock financial data) to stockList, sort, and notify adapter of change
-            stocksList.add(stock);
-            stocksList.sort(new StockSorter());
-            stocksAdapter.notifyDataSetChanged();
         }
     }
 
@@ -109,6 +104,20 @@ public class MainActivity extends AppCompatActivity
         stocksAdapter.notifyDataSetChanged();
     }
 
+    public void addStockFromDownloader(Stock s) {
+
+        for(Stock stock : stocksList) {
+            if (stock.getSymbol().equals(s.getSymbol())) {
+                duplicateStock(s);
+                return;
+            }
+        }
+
+        stocksList.add(s);
+        stocksList.sort(new StockSorter());
+        stocksAdapter.notifyDataSetChanged();
+    }
+
 
     // add stock menu
 
@@ -136,7 +145,23 @@ public class MainActivity extends AppCompatActivity
         builder.setView(input);
         builder.setPositiveButton("OK", (dialog, id) -> {
             // add stock
-            listStockMatches(findStockNames(String.valueOf(input.getText())));
+            HashMap<String, String> matches = findStockNames(String.valueOf(input.getText()));
+            if (matches.size() > 1)
+                listStockMatches(matches);
+            else if (matches.size() == 1) {
+
+                Stock temp = new Stock();
+
+                for (Map.Entry<String, String> entry : matches.entrySet()) {
+                    temp.setSymbol(entry.getKey());
+                    temp.setCompany(entry.getValue());
+                }
+
+                // add stock to recycler view list
+                StockDownloaderRunnable stockDownloaderRunnable =
+                        new StockDownloaderRunnable(this, temp);
+                new Thread(stockDownloaderRunnable).start();
+            }
         });
         builder.setNegativeButton("CANCEL", (dialog, id) -> {
             // do nothing
@@ -148,10 +173,9 @@ public class MainActivity extends AppCompatActivity
         dialog.show();
     }
 
+    // displays stocks that match the input of the user (if more than one match is found)
     public void listStockMatches(HashMap<String, String> matches) {
 
-        //ake an array of strings
-        //final CharSequence[] matchesArray = new CharSequence[matches.size()];
         ArrayList<String> matchesArray = new ArrayList<>();
         for (Map.Entry<String, String> entry : matches.entrySet())
             matchesArray.add(entry.getKey() + " - " + entry.getValue());
@@ -164,8 +188,18 @@ public class MainActivity extends AppCompatActivity
         // list, and add the "onClick" for when a selection is made
         CharSequence[] matchesList = matchesArray.toArray(new String[matchesArray.size()]);
         builder.setItems(matchesList, (dialog, which) -> {
+
+            String symbol = matchesList[which].toString();
+            symbol = symbol.substring(0, symbol.indexOf(" "));
+
+            Stock temp = new Stock();
+            temp.setSymbol(symbol);
+            temp.setCompany(matches.get(symbol));
+
             // add stock to recycler view list
-            System.out.println(matchesList[which]);
+            StockDownloaderRunnable stockDownloaderRunnable =
+                    new StockDownloaderRunnable(this, temp);
+            new Thread(stockDownloaderRunnable).start();
 
         });
 
@@ -174,6 +208,16 @@ public class MainActivity extends AppCompatActivity
         });
         AlertDialog dialog = builder.create();
 
+        dialog.show();
+    }
+
+    public void duplicateStock(Stock s) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Stock Symbol " + s.getSymbol() + " is already displayed");
+        builder.setTitle("Duplicate Stock");
+
+        AlertDialog dialog = builder.create();
         dialog.show();
     }
 

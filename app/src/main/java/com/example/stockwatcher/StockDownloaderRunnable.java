@@ -80,8 +80,8 @@ public class StockDownloaderRunnable implements Runnable{
             return;
         }
         parseJSON(s);
-        //final Stock stockObj = parseJSON(s);
-        //mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stockObj));
+        // update main activity ui with new stock financial data
+        mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stock));
     }
 
     // parse json string and returns Stock object
