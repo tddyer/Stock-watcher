@@ -1,15 +1,19 @@
 package com.example.stockwatcher;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.File;
@@ -33,17 +37,16 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-
         recyclerView = findViewById(R.id.stocksRecyclerView);
 
+        databaseHandler = new DatabaseHandler(this);
         stocksAdapter = new StocksAdapter(stocksList, this);
         recyclerView.setAdapter(stocksAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        databaseHandler = new DatabaseHandler(this);
 
         // deletes db
 //        this.deleteDatabase(DatabaseHandler.DATABASE_NAME);
@@ -106,14 +109,6 @@ public class MainActivity extends AppCompatActivity
         stocksAdapter.notifyDataSetChanged();
     }
 
-    // StockDownloader methods
-
-    // add stock to stocks list, sort list, update changes
-//    public void addStockFromDownloader(Stock s) {
-//        stocksList.add(s);
-////        stocksList.sort(new StockSorter());
-////        stocksAdapter.notifyDataSetChanged();
-//    }
 
     // add stock menu
 
@@ -126,11 +121,80 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.menuAddStock) {
-            for (Map.Entry<String, String> entry : stockNames.entrySet()) {
-                System.out.println(entry.getKey() + ", " + entry.getValue());
-            }
+            addStock();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // alert dialogs
+
+    public void addStock() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+        builder.setPositiveButton("OK", (dialog, id) -> {
+            // add stock
+            listStockMatches(findStockNames(String.valueOf(input.getText())));
+        });
+        builder.setNegativeButton("CANCEL", (dialog, id) -> {
+            // do nothing
+        });
+        builder.setTitle("Stock Selection");
+        builder.setMessage("Please enter a stock symbol");
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void listStockMatches(HashMap<String, String> matches) {
+
+        //ake an array of strings
+        //final CharSequence[] matchesArray = new CharSequence[matches.size()];
+        ArrayList<String> matchesArray = new ArrayList<>();
+        for (Map.Entry<String, String> entry : matches.entrySet())
+            matchesArray.add(entry.getKey() + " - " + entry.getValue());
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Make a selection");
+
+        // Set the builder to display the string array as a selectable
+        // list, and add the "onClick" for when a selection is made
+        CharSequence[] matchesList = matchesArray.toArray(new String[matchesArray.size()]);
+        builder.setItems(matchesList, (dialog, which) -> {
+            // add stock to recycler view list
+            System.out.println(matchesList[which]);
+
+        });
+
+        builder.setNegativeButton("Nevermind", (dialog, id) -> {
+            // do nothing
+        });
+        AlertDialog dialog = builder.create();
+
+        dialog.show();
+    }
+
+    // helpers
+
+    public HashMap<String, String> findStockNames(String input) {
+
+        HashMap<String, String> matches = new HashMap<>();
+
+        // converting input to all lower case for string comparisons
+        input = input.toLowerCase();
+
+        // check all stock symbols + names for user input to find matches
+        for (Map.Entry<String, String> entry : stockNames.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            if (k.toLowerCase().contains(input) || v.toLowerCase().contains(input)) {
+                matches.put(k, v);
+            }
+        }
+
+        return matches;
     }
 }
