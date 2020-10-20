@@ -38,11 +38,11 @@ public class StocksAdapter extends RecyclerView.Adapter<StockViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         Stock stock = stocksList.get(position);
-        String stockDirection = "/\\ ";
+        String stockDirection = "▲ ";
         int fontColor = Color.parseColor("#00FF00");
         if (stock.getPriceChange() < 0) {
             fontColor = Color.parseColor("#FF0000");
-            stockDirection = "\\/ ";
+            stockDirection = "▼ ";
         }
 
         holder.symbol.setText(stock.getSymbol());

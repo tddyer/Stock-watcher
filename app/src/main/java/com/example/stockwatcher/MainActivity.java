@@ -5,6 +5,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -65,7 +66,7 @@ public class MainActivity extends AppCompatActivity
         ArrayList<Stock> stockNames = databaseHandler.loadStocks();
 
 //        for (Stock stock : stockNames) {
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 18; i++) {
             // fetch stock data from IEX
             StockDownloaderRunnable stockDownloaderRunnable =
                     new StockDownloaderRunnable(this, stockNames.get(i));
@@ -73,10 +74,13 @@ public class MainActivity extends AppCompatActivity
 
         }
 
+        stocksList.sort(new StockSorter());
+        stocksAdapter.notifyDataSetChanged();
+
         // test: populates recycler with names from db
 
 //        stocksList.clear();
-//        stocksList.addAll(tempStocks);
+//        stocksxList.addAll(tempStocks);
 //        stocksAdapter.notifyDataSetChanged();
 
     }
@@ -123,7 +127,7 @@ public class MainActivity extends AppCompatActivity
     // add stock to stocks list, sort list, update changes
     public void addStockFromDownloader(Stock s) {
         stocksList.add(s);
-        stocksList.sort(new StockSorter());
-        stocksAdapter.notifyDataSetChanged();
+//        stocksList.sort(new StockSorter());
+//        stocksAdapter.notifyDataSetChanged();
     }
 }

@@ -60,7 +60,7 @@ public class StockDownloaderRunnable implements Runnable{
                 sb.append(line).append('\n');
             }
 
-            Log.d(TAG, "run: fetched data, " + sb.toString());
+//            Log.d(TAG, "run: fetched data, " + sb.toString());
 
         } catch (Exception e) {
             Log.d(TAG, "run: exception", e);
@@ -91,9 +91,23 @@ public class StockDownloaderRunnable implements Runnable{
             JSONObject jObjMain = new JSONObject(s);
             jStock.setSymbol(jObjMain.getString("symbol"));
             jStock.setCompany(jObjMain.getString("companyName"));
-            jStock.setPrice(Double.parseDouble(jObjMain.getString("latestPrice")));
-            jStock.setPriceChange(Double.parseDouble(jObjMain.getString("change")));
-            jStock.setChangePercentage(Double.parseDouble(jObjMain.getString("changePercent")));
+
+            // checking stock values that can be null
+            String lp = jObjMain.getString("latestPrice");
+            if (lp.equals("null"))
+                lp = "0";
+            jStock.setPrice(Double.parseDouble(lp));
+
+            String c = jObjMain.getString("change");
+            if (c.equals("null"))
+                c = "0";
+            jStock.setPriceChange(Double.parseDouble(c));
+
+            String cp = jObjMain.getString("changePercent");
+            if (cp.equals("null"))
+                cp = "0";
+            jStock.setChangePercentage(Double.parseDouble(cp));
+
             return jStock;
         } catch (Exception e) {
             Log.d(TAG, "parseJSON: " + e.getMessage());
