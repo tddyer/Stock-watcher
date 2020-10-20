@@ -59,12 +59,10 @@ public class MainActivity extends AppCompatActivity
         // load stock names from internal DB
         ArrayList<Stock> selectedStocks = databaseHandler.loadStocks();
 
-
-        // TODO: Might need to switch this to index so i can edit the stock values from runnable
         for (Stock stock : selectedStocks) {
             // fetch stock data from IEX
             StockDownloaderRunnable stockDownloaderRunnable =
-                    new StockDownloaderRunnable(this, stock);
+                    new StockDownloaderRunnable(this, stock, false);
             new Thread(stockDownloaderRunnable).start();
 
         }
@@ -83,12 +81,13 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
         Stock s = stocksList.get(pos);
+        // TODO: open market watch here
     }
 
     @Override
     public boolean onLongClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
-        // TODO: DELETE STOCK HERE
+        deleteStock(pos);
         return true;
     }
 
@@ -106,6 +105,7 @@ public class MainActivity extends AppCompatActivity
 
     public void addStockFromDownloader(Stock s) {
 
+        // checking if stock is already displayed
         for(Stock stock : stocksList) {
             if (stock.getSymbol().equals(s.getSymbol())) {
                 duplicateStock(s);
@@ -116,6 +116,21 @@ public class MainActivity extends AppCompatActivity
         stocksList.add(s);
         stocksList.sort(new StockSorter());
         stocksAdapter.notifyDataSetChanged();
+    }
+
+    public void addStockAsSelection(Stock s) {
+        // checking if stock is already displayed
+        for(Stock stock : stocksList) {
+            if (stock.getSymbol().equals(s.getSymbol())) {
+                duplicateStock(s);
+                return;
+            }
+        }
+
+        stocksList.add(s);
+        stocksList.sort(new StockSorter());
+        stocksAdapter.notifyDataSetChanged();
+        databaseHandler.addStock(s);
     }
 
 
@@ -159,7 +174,7 @@ public class MainActivity extends AppCompatActivity
 
                 // add stock to recycler view list
                 StockDownloaderRunnable stockDownloaderRunnable =
-                        new StockDownloaderRunnable(this, temp);
+                        new StockDownloaderRunnable(this, temp, true);
                 new Thread(stockDownloaderRunnable).start();
             }
         });
@@ -184,8 +199,7 @@ public class MainActivity extends AppCompatActivity
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Make a selection");
 
-        // Set the builder to display the string array as a selectable
-        // list, and add the "onClick" for when a selection is made
+
         CharSequence[] matchesList = matchesArray.toArray(new String[matchesArray.size()]);
         builder.setItems(matchesList, (dialog, which) -> {
 
@@ -198,7 +212,7 @@ public class MainActivity extends AppCompatActivity
 
             // add stock to recycler view list
             StockDownloaderRunnable stockDownloaderRunnable =
-                    new StockDownloaderRunnable(this, temp);
+                    new StockDownloaderRunnable(this, temp, true);
             new Thread(stockDownloaderRunnable).start();
 
         });
@@ -216,6 +230,19 @@ public class MainActivity extends AppCompatActivity
 
         builder.setMessage("Stock Symbol " + s.getSymbol() + " is already displayed");
         builder.setTitle("Duplicate Stock");
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void deleteStock(final int pos) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setPositiveButton("OK", (dialog, id) -> removePos(pos));
+        builder.setNegativeButton("CANCEL", (dialog, id) -> {
+            // do nothing
+        });
+        builder.setMessage("Are you sure you want to delete this note?");
+        builder.setTitle("Delete Note");
 
         AlertDialog dialog = builder.create();
         dialog.show();
@@ -240,5 +267,13 @@ public class MainActivity extends AppCompatActivity
         }
 
         return matches;
+    }
+
+    public void removePos(int pos) {
+        if (!stocksList.isEmpty()) {
+            databaseHandler.deleteStock(stocksList.get(pos).getSymbol());
+            stocksList.remove(pos);
+            stocksAdapter.notifyDataSetChanged();
+        }
     }
 }

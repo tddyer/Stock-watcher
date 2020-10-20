@@ -18,11 +18,13 @@ public class StockDownloaderRunnable implements Runnable{
     private MainActivity mainActivity;
     public Stock stock;
     private String DATA_URL;
+    private boolean saveToDb;
 
     // constructor
-    StockDownloaderRunnable(MainActivity mainActivity, Stock stock) {
+    StockDownloaderRunnable(MainActivity mainActivity, Stock stock, boolean saveToDb) {
         this.mainActivity = mainActivity;
         this.stock = stock;
+        this.saveToDb = saveToDb;
         this.DATA_URL = "https://cloud.iexapis.com/stable/stock/" +
                         stock.getSymbol() +
                         "/quote?token=" +
@@ -81,7 +83,10 @@ public class StockDownloaderRunnable implements Runnable{
         }
         parseJSON(s);
         // update main activity ui with new stock financial data
-        mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stock));
+        if (saveToDb)
+            mainActivity.runOnUiThread(() -> mainActivity.addStockAsSelection(stock));
+        else
+            mainActivity.runOnUiThread(() -> mainActivity.addStockFromDownloader(stock));
     }
 
     // parse json string and returns Stock object
