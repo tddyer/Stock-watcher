@@ -9,8 +9,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -18,6 +20,7 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -41,7 +44,8 @@ public class MainActivity extends AppCompatActivity
     private DatabaseHandler databaseHandler;
     private SwipeRefreshLayout swiper;
 
-    public boolean connectedToNetwork;
+    private static final String marketWatchURL = "http://www.marketwatch.com/investing/stock/";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,8 +57,10 @@ public class MainActivity extends AppCompatActivity
         recyclerView = findViewById(R.id.stocksRecyclerView);
         stocksAdapter = new StocksAdapter(stocksList, this);
         recyclerView.setAdapter(stocksAdapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new LinearLayoutManager(this,
+                LinearLayoutManager.VERTICAL, false));
         databaseHandler = new DatabaseHandler(this);
+
 
         // swipe refresher
         swiper = findViewById(R.id.swiper);
@@ -71,9 +77,7 @@ public class MainActivity extends AppCompatActivity
         ArrayList<Stock> selectedStocks = databaseHandler.loadStocks();
 
         // checking network connection
-        connectedToNetwork = networkCheck();
-
-        if (connectedToNetwork) {
+        if (networkCheck()) {
             for (Stock stock : selectedStocks) {
                 // fetch stock data from IEX
                 StockDownloaderRunnable stockDownloaderRunnable =
@@ -101,7 +105,11 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
         Stock s = stocksList.get(pos);
-        // TODO: open market watch here
+
+        // open MarketWatch stock page
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(marketWatchURL + s.getSymbol()));
+        startActivity(i);
     }
 
     @Override
@@ -122,6 +130,7 @@ public class MainActivity extends AppCompatActivity
         Log.d("MainActivity", "downloadFailed: Couldn't download stock names");
     }
 
+    // adds stock to stockList that is already stored in local database
     public void addStockFromDownloader(Stock s) {
 
         // checking if stock is already displayed
@@ -137,6 +146,7 @@ public class MainActivity extends AppCompatActivity
         stocksAdapter.notifyDataSetChanged();
     }
 
+    // adds stock to stockList that is not already stored in local database
     public void addStockAsSelection(Stock s) {
         // checking if stock is already displayed
         for(Stock stock : stocksList) {
@@ -152,6 +162,7 @@ public class MainActivity extends AppCompatActivity
         databaseHandler.addStock(s);
     }
 
+    // without connect just add stocks to list with values defaults to zero
     public void addStockWithoutConnection(Stock s) {
         System.out.println(stocksList);
         // defaulting stock values to zero
@@ -168,7 +179,7 @@ public class MainActivity extends AppCompatActivity
     // swipe refresh
 
     private void refreshStocks() {
-        if (connectedToNetwork) {
+        if (networkCheck()) {
             // flush out current stock data
             stocksList.clear();
             stocksAdapter.notifyDataSetChanged();
@@ -198,8 +209,17 @@ public class MainActivity extends AppCompatActivity
 
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
 
-        if (networkInfo != null && networkInfo.isConnected())
+        if (networkInfo != null && networkInfo.isConnected()) {
+            // checking if stockNames is empty to repopulate if needed
+            //      - occurs if the app was loaded w/o network connection
+            //        and gained connection during usage
+            if (stockNames.size() == 0) {
+                NameDownloaderRunnable nameDownloaderRunnable =
+                        new NameDownloaderRunnable(this);
+                new Thread(nameDownloaderRunnable).start();
+            }
             return true;
+        }
 
         return false;
     }
@@ -216,7 +236,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.menuAddStock) {
-            if (connectedToNetwork) {
+            if (networkCheck()) {
                 addStock();
                 return true;
             } else {

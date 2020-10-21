@@ -62,8 +62,6 @@ public class StockDownloaderRunnable implements Runnable{
                 sb.append(line).append('\n');
             }
 
-//            Log.d(TAG, "run: fetched data, " + sb.toString());
-
         } catch (Exception e) {
             Log.d(TAG, "run: exception", e);
             dataHandler(null);

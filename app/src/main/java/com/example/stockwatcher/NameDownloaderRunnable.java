@@ -76,12 +76,10 @@ public class NameDownloaderRunnable implements Runnable{
         }
 
         parseJSON(s);
-//        final HashMap<String, String> stockNames = parseJSON(s);
         mainActivity.runOnUiThread(() -> mainActivity.udpateStockNamesMap(namesMap));
     }
 
     private void parseJSON(String s) {
-//        HashMap<String, String> stockList = new HashMap<>();
         try {
             JSONArray jObjMain = new JSONArray(s);
             for (int i = 0; i < jObjMain.length(); i++) {
@@ -90,11 +88,9 @@ public class NameDownloaderRunnable implements Runnable{
                 String company = jStock.getString("name");
                 namesMap.put(symbol, company);
             }
-//            return stockList;
         } catch (Exception e) {
             Log.d(TAG, "parseJSON: " + e.getMessage());
             e.printStackTrace();
         }
-//        return null;
     }
 }
