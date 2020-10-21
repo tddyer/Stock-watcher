@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,15 +42,13 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        recyclerView = findViewById(R.id.stocksRecyclerView);
 
-        databaseHandler = new DatabaseHandler(this);
+        recyclerView = findViewById(R.id.stocksRecyclerView);
         stocksAdapter = new StocksAdapter(stocksList, this);
         recyclerView.setAdapter(stocksAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        databaseHandler = new DatabaseHandler(this);
 
-        // deletes db
-//        this.deleteDatabase(DatabaseHandler.DATABASE_NAME);
 
         // fetching stock name data
         NameDownloaderRunnable nameDownloaderRunnable =
@@ -156,7 +155,8 @@ public class MainActivity extends AppCompatActivity
     public void addStock() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
+        input.setGravity(Gravity.CENTER);
         builder.setView(input);
         builder.setPositiveButton("OK", (dialog, id) -> {
             // add stock
@@ -254,14 +254,12 @@ public class MainActivity extends AppCompatActivity
 
         HashMap<String, String> matches = new HashMap<>();
 
-        // converting input to all lower case for string comparisons
-        input = input.toLowerCase();
-
         // check all stock symbols + names for user input to find matches
         for (Map.Entry<String, String> entry : stockNames.entrySet()) {
             String k = entry.getKey();
             String v = entry.getValue();
-            if (k.toLowerCase().contains(input) || v.toLowerCase().contains(input)) {
+            String v_upper = v.toUpperCase();
+            if (k.contains(input) || v_upper.contains(input)) {
                 matches.put(k, v);
             }
         }
