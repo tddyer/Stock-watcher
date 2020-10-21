@@ -13,3 +13,5 @@ A stock tracking application that was built as a part of my Mobile Application D
 - Stocks are ordered alphabetically and any saved stocks can be deleted by long pressing the desired stock to delete
 
 ## Screenshots
+
+<img src="https://user-images.githubusercontent.com/39466067/96791023-532ae980-13bd-11eb-8fb7-02fb62550416.png" width="360" height="720">    <img src="https://user-images.githubusercontent.com/39466067/96791055-6342c900-13bd-11eb-93d4-0f6bdb443313.png" width="360" height="720">
