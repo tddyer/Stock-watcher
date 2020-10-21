@@ -5,8 +5,12 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.content.Context;
 import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -35,6 +39,9 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView recyclerView;
     private StocksAdapter stocksAdapter;
     private DatabaseHandler databaseHandler;
+    private SwipeRefreshLayout swiper;
+
+    public boolean connectedToNetwork;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +56,11 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         databaseHandler = new DatabaseHandler(this);
 
+        // swipe refresher
+        swiper = findViewById(R.id.swiper);
+        swiper.setOnRefreshListener(() -> refreshStocks());
+
+
 
         // fetching stock name data
         NameDownloaderRunnable nameDownloaderRunnable =
@@ -58,12 +70,21 @@ public class MainActivity extends AppCompatActivity
         // load stock names from internal DB
         ArrayList<Stock> selectedStocks = databaseHandler.loadStocks();
 
-        for (Stock stock : selectedStocks) {
-            // fetch stock data from IEX
-            StockDownloaderRunnable stockDownloaderRunnable =
-                    new StockDownloaderRunnable(this, stock, false);
-            new Thread(stockDownloaderRunnable).start();
+        // checking network connection
+        connectedToNetwork = networkCheck();
 
+        if (connectedToNetwork) {
+            for (Stock stock : selectedStocks) {
+                // fetch stock data from IEX
+                StockDownloaderRunnable stockDownloaderRunnable =
+                        new StockDownloaderRunnable(this, stock, false);
+                new Thread(stockDownloaderRunnable).start();
+
+            }
+        } else {
+            connectionError();
+            for (Stock stock : selectedStocks)
+                addStockWithoutConnection(stock);
         }
     }
 
@@ -98,8 +119,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void downloadFailed() {
-        stocksList.clear();
-        stocksAdapter.notifyDataSetChanged();
+        Log.d("MainActivity", "downloadFailed: Couldn't download stock names");
     }
 
     public void addStockFromDownloader(Stock s) {
@@ -132,6 +152,58 @@ public class MainActivity extends AppCompatActivity
         databaseHandler.addStock(s);
     }
 
+    public void addStockWithoutConnection(Stock s) {
+        System.out.println(stocksList);
+        // defaulting stock values to zero
+        s.setPrice(0.00);
+        s.setPriceChange(0.00);
+        s.setChangePercentage(0.00);
+
+        stocksList.add(s);
+        stocksList.sort(new StockSorter());
+        stocksAdapter.notifyDataSetChanged();
+
+    }
+
+    // swipe refresh
+
+    private void refreshStocks() {
+        if (connectedToNetwork) {
+            // flush out current stock data
+            stocksList.clear();
+            stocksAdapter.notifyDataSetChanged();
+
+            // load stock names from internal DB
+            ArrayList<Stock> selectedStocks = databaseHandler.loadStocks();
+
+            // refresh by fetching new stocks data
+            for (Stock stock : selectedStocks) {
+                // fetch stock data from IEX
+                StockDownloaderRunnable stockDownloaderRunnable =
+                        new StockDownloaderRunnable(this, stock, false);
+                new Thread(stockDownloaderRunnable).start();
+            }
+        } else {
+            connectionError();
+        }
+        swiper.setRefreshing(false);
+    }
+
+    // network checking
+
+    private boolean networkCheck() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null)
+            Log.d("MainActivity", "networkCheck: Error accessing connectivity manager");
+
+        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+
+        if (networkInfo != null && networkInfo.isConnected())
+            return true;
+
+        return false;
+    }
+
 
     // add stock menu
 
@@ -144,8 +216,12 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.menuAddStock) {
-            addStock();
-            return true;
+            if (connectedToNetwork) {
+                addStock();
+                return true;
+            } else {
+                connectionError();
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -160,7 +236,8 @@ public class MainActivity extends AppCompatActivity
         builder.setView(input);
         builder.setPositiveButton("OK", (dialog, id) -> {
             // add stock
-            HashMap<String, String> matches = findStockNames(String.valueOf(input.getText()));
+            String inputSymbol = String.valueOf(input.getText());
+            HashMap<String, String> matches = findStockNames(inputSymbol);
             if (matches.size() > 1)
                 listStockMatches(matches);
             else if (matches.size() == 1) {
@@ -176,6 +253,8 @@ public class MainActivity extends AppCompatActivity
                 StockDownloaderRunnable stockDownloaderRunnable =
                         new StockDownloaderRunnable(this, temp, true);
                 new Thread(stockDownloaderRunnable).start();
+            } else {
+                noMatchingStocksFound(inputSymbol);
             }
         });
         builder.setNegativeButton("CANCEL", (dialog, id) -> {
@@ -230,6 +309,26 @@ public class MainActivity extends AppCompatActivity
 
         builder.setMessage("Stock Symbol " + s.getSymbol() + " is already displayed");
         builder.setTitle("Duplicate Stock");
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void noMatchingStocksFound(String symbol) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Data for stock symbol");
+        builder.setTitle("Symbol Not Found: " + symbol);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void connectionError() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Stocks cannot be updated without a network connection");
+        builder.setTitle("No Network Connection");
 
         AlertDialog dialog = builder.create();
         dialog.show();
